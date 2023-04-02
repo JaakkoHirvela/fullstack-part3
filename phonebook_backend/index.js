@@ -18,6 +18,9 @@ const errorHandler = (error, request, response, next) => {
     if (error.name === 'CastError') {
         return response.status(400).send({ error: 'malformatted id' })
     }
+    else if (error.name === 'ValidationError') {
+        return response.status(400).json({ error: error.message })
+    }
 
     next(error)
 }
@@ -83,6 +86,9 @@ app.post('/api/persons', (req, res) => {
         .then(result => {
             if (result) {
                 console.log("This person is already in the phonebook")
+                return res.status(400).json({
+                    error: 'this name is already in the phonebook'
+                })
             }
             else {
                 const person = new Person({
@@ -99,17 +105,25 @@ app.post('/api/persons', (req, res) => {
 })
 
 app.put('/api/persons/:id', (req, res, next) => {
-    const body = req.body
+    /*const body = req.body
     if (!body.number) {
         console.log("number is missing")
         return res.status(400).json({
             error: 'number is missing'
         })
-    }
-    Person.updateOne({ name: `${body.name}` }, { number: `${body.number}` }).exec()
-        .then(result => {
-            console.log(`updated ${body.name}'s number to ${body.number}`)
+    }*/
+    const { name, number } = req.body
+    Person.findByIdAndUpdate(req.params.id, { name, number })
+        .then(updatedPerson => {
+            console.log(`updated ${name}'s number to ${number}`)
+            res.json(updatedPerson)
         })
+        .catch(err => next(err))
+    /*Person.updateOne({ name: `${name}` }, { number: `${number}` }).exec()
+        .then(result => {
+            console.log(`updated ${name}'s number to ${number}`)
+        })
+        */
 })
 
 app.use(errorHandler)
@@ -117,5 +131,4 @@ app.use(errorHandler)
 const PORT = process.env.PORT
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`)
-    generateId()
 })
