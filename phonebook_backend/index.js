@@ -9,7 +9,7 @@ morgan.token('data', (req) => {
     if (req.method === 'POST') {
         return JSON.stringify(req.body)
     }
-    return " "
+    return ' '
 })
 
 const errorHandler = (error, request, response, next) => {
@@ -62,9 +62,9 @@ app.get('/api/persons/:id', (req, res, next) => {
         })
 })
 
-app.delete('/api/persons/:id', (req, res) => {
+app.delete('/api/persons/:id', (req, res, next) => {
     Person.findByIdAndDelete(req.params.id)
-        .then(result => {
+        .then(() => {
             res.status(204).end()
         })
         .catch(err => {
@@ -84,7 +84,7 @@ app.post('/api/persons', (req, res, next) => {
     Person.findOne({ name: `${body.name}` }).exec()
         .then(result => {
             if (result) {
-                console.log("This person is already in the phonebook")
+                console.log('This person is already in the phonebook')
                 return res.status(400).json({
                     error: 'this name is already in the phonebook'
                 })
@@ -94,7 +94,7 @@ app.post('/api/persons', (req, res, next) => {
                     name: `${body.name}`,
                     number: `${body.number}`,
                 })
-                person.save().then(result => {
+                person.save().then(() => {
                     console.log(`added ${body.name} number ${body.number} to phonebook`)
                     res.json(person)
                 })
