@@ -14,14 +14,12 @@ morgan.token('data', (req) => {
 
 const errorHandler = (error, request, response, next) => {
     console.error(error.message)
-
     if (error.name === 'CastError') {
         return response.status(400).send({ error: 'malformatted id' })
     }
     else if (error.name === 'ValidationError') {
         return response.status(400).json({ error: error.message })
     }
-
     next(error)
 }
 
@@ -39,7 +37,6 @@ app.get('/api/persons', (req, res) => {
         res.json(people)
     })
 })
-
 
 app.get('/info', (req, res) => {
     const date = new Date()
@@ -75,13 +72,15 @@ app.delete('/api/persons/:id', (req, res) => {
         })
 })
 
-app.post('/api/persons', (req, res) => {
+app.post('/api/persons', (req, res, next) => {
     const body = req.body
     if (!body.name || !body.number) {
         return res.status(400).json({
             error: 'name or number is missing'
         })
     }
+    /* Frontend checks uniquity but a direct POST-request can add
+       duplicates */
     Person.findOne({ name: `${body.name}` }).exec()
         .then(result => {
             if (result) {
@@ -95,35 +94,23 @@ app.post('/api/persons', (req, res) => {
                     name: `${body.name}`,
                     number: `${body.number}`,
                 })
-
                 person.save().then(result => {
                     console.log(`added ${body.name} number ${body.number} to phonebook`)
                     res.json(person)
                 })
+                    .catch(err => next(err))
             }
         })
 })
 
 app.put('/api/persons/:id', (req, res, next) => {
-    /*const body = req.body
-    if (!body.number) {
-        console.log("number is missing")
-        return res.status(400).json({
-            error: 'number is missing'
-        })
-    }*/
     const { name, number } = req.body
-    Person.findByIdAndUpdate(req.params.id, { name, number })
+    Person.findByIdAndUpdate(req.params.id, { name, number }, { runValidators: true, context: 'query' })
         .then(updatedPerson => {
             console.log(`updated ${name}'s number to ${number}`)
             res.json(updatedPerson)
         })
         .catch(err => next(err))
-    /*Person.updateOne({ name: `${name}` }, { number: `${number}` }).exec()
-        .then(result => {
-            console.log(`updated ${name}'s number to ${number}`)
-        })
-        */
 })
 
 app.use(errorHandler)
